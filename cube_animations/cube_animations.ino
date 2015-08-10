@@ -1,11 +1,9 @@
+#include <Cube.h>
+
 #include <OctoWS2811.h>
-#include <SetUpCube.h>
 #include <array>
-#include <algorithm>
 #include <math.h>
-#include <random>       // std::default_random_engine
-#include <chrono>       // std::chrono::system_clock
-#include <time.h>
+
 
 int ledPin = 13;
 
@@ -19,15 +17,26 @@ const int config = WS2811_GRB | WS2811_800kHz;
 
 OctoWS2811 leds(ledsPerStrip, displayMemory, drawingMemory, config);
 
+//int top_burn = 0;
+//int bottomBurn = 3;
+//int startBurn = 2;
+//int colsPerStrand = 6;
+//int endBurn = 0;
+//int strandsPerPanel = 1;
+//
+//const int xSize = 6;
+//const int ySize = 7;
+//const int zSize = 7;
+
 int top_burn = 0;
-int bottomBurn = 3;
-int startBurn = 2;
+int bottomBurn = 1;
+int startBurn = 3;
 int colsPerStrand = 6;
-int endBurn = 0;
+int endBurn = 2;
 int strandsPerPanel = 1;
 
 const int xSize = 6;
-const int ySize = 7;
+const int ySize = 1;
 const int zSize = 7;
 
 int ***cube;
@@ -41,28 +50,18 @@ void setupRainbow() {
     int hue = i * 2;
     int saturation = 100;
     int lightness = 50;
-    // pre-compute the 180 rainbow colors
+    
     rainbow[i] = makeColor(hue, saturation, lightness);
   }
 }
 
 void setup() {
-  delay(2000);
   pinMode(ledPin, OUTPUT);
-  leds.begin();
   Serial.begin(9600);
-  Serial.println("setup");
-  Cube kube(leds, xSize, ySize, zSize);
 
-  Serial.println("before begin");
   setupRainbow();
-  kewb.begin(xSize, ySize, zSize, strandsPerPanel, startBurn, bottomBurn, endBurn);
-  Serial.println("after begin");
-  //cube = kube.set_up_cube(xSize, ySize, zSize, strandsPerPanel, startBurn, bottomBurn, endBurn);
+  kewb.setUp(strandsPerPanel, startBurn, bottomBurn, endBurn);
 }
-
-
-
 
 
 void solidCircle(Point *start, Point *color, float t) {
@@ -77,10 +76,10 @@ void solidCircle(Point *start, Point *color, float t) {
     for(int y = 0; y < ySize; y++) {
       for(int z = 0; z < zSize; z++) {
          if (abs((x - start->x) * (x - start->x) + (y - start->y) * (y - start->y) + (z - start->z) * (z - start->z) - r2) < near * near) {
-           int curColor = leds.getPixel(kewb.cube[x][y][z]);
+           int curColor = kewb.getPixel(x, y, z);
            Point colorToSet = *color;
            if (curColor != 0) {
-             Point curColorP = intToColor(curColor);
+//             Point curColorP = intToColor(curColor);
              colorToSet = Point(20, 150, 20);//curColorP.average(color);
            }
            kewb.setPixel(x, y, z, colorToSet.x, colorToSet.y, colorToSet.z);
@@ -90,6 +89,7 @@ void solidCircle(Point *start, Point *color, float t) {
   }
 }
 
+// TODO: why do i have to define these? Shouldn't they come in from Math.h?
 int min(int a, int b) {
  if (a <= b)
    return a; 
@@ -110,7 +110,7 @@ void square(Point *start, Point *color, float tt) {
     int curColor = 0;//kewb.getPixel(x, 0, start->z);
     Point colorToSet = *color;
     if (curColor != 0) {
-      Point curColorP = intToColor(curColor);
+//      Point curColorP = intToColor(curColor);
       colorToSet = Point(20, 150, 20);//curColorP.average(color);
     }
     kewb.setPixel(x, 0, start->z - t, &colorToSet);
@@ -121,7 +121,7 @@ void square(Point *start, Point *color, float tt) {
     if (z == start->z - t || z == start->z + t) curColor = 0;
     Point colorToSet = *color;
     if (curColor != 0) {
-      Point curColorP = intToColor(curColor);
+//      Point curColorP = intToColor(curColor);
       colorToSet = Point(20, 150, 20);//curColorP.average(color);
     }
     kewb.setPixel(start->x - t, 0, z, &colorToSet);
@@ -151,7 +151,7 @@ void explodeCube() {
         }
       }
     }
-    leds.show();
+    kewb.show();
     delay(100);
     kewb.resetPixels();
   }
@@ -213,7 +213,7 @@ void doubleSquare() {
   while(t < 7) {
     square(&start1, &color1, t);
     square(&start2, &color2, t);
-    leds.show();
+    kewb.show();
     delay(200);
     kewb.resetPixels();
     t++;
@@ -233,7 +233,7 @@ void doubleStarburst() {
   while(t < 50) {
     solidCircle(&start1, &color1, t);
     solidCircle(&start2, &color2, t - diff);
-    leds.show();
+    kewb.show();
     delay(22);
     kewb.resetPixels();
     t++;
@@ -335,13 +335,13 @@ unsigned int h2rgb(unsigned int v1, unsigned int v2, unsigned int hue)
 int colorI = 0;
 
 void manhattanSphere() {
-  Point start = Point (rand() % (xSize / 2) + (xSize / 3), rand() % (ySize / 2) + (ySize / 3), rand() % (zSize / 2) + (zSize / 3));
+  Point start = Point (rand() % (xSize / 2) + (xSize / 3), 1, rand() % (zSize / 2) + (zSize / 3));
   
   for (int t = 0; t < 80; t++) {
       manhattanSphereRad(&start, &start, t, colorI);
       //manhattanSphereRad(&start, &start, t - 50, colorI);
-      leds.show();
-      //delay(1);
+      kewb.show();
+      delay(20);
       colorI = (colorI + 1) % 180;
       kewb.resetPixels();
     }

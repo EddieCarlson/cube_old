@@ -1,13 +1,12 @@
 #include <OctoWS2811.h>
 
-// TODO: shorts should be (unsigned?) chars (no way is a cube gonna be > 255 on a side)
 class Point {
   public:
-  short x;
-  short y;
-  short z;
+  char x;
+  char y;
+  char z;
 
-  Point(short _x, short _y, short _z) {
+  Point(char _x, char _y, char _z) {
     x = _x;
     y = _y;
     z = _z;
@@ -44,25 +43,24 @@ private:
 	// seems like maybe better style for this to be the actual object, not pointer. no reason to
 	// use this outside of the cube. Maybe have the cube construct it instead.
 	OctoWS2811 *leds;
+	unsigned short ***cube;
+	int updateX(int x, int panel);
 public:
-	Cube(OctoWS2811 _leds, int x, int y, int z);
-	int *** build_cube(int xSize, int ySize, int zSize); // should be private probably
+	Cube(OctoWS2811 _leds, char x, char y, char z);
+	unsigned short *** build_cube(int xSize, int ySize, int zSize); // should be private probably
 	void setPixel(int x, int y, int z, int r, int g, int b);
+	// TODO: alias point as Color? (char x,y,z === char r,g,b)
 	void setPixel(int x, int y, int z, Point *c);
 	void setPixel(Point *p, int r, int g, int b);
-	// TODO: alias point as Color? (char x,y,z could easily be char r,g,b)
-	void setPixel(Point *p, Point *c);
 	void setPixel(int x, int y, int z, int color);
-	// TODO: begin should be private and called in constructor
-	void begin(int xSize, int ySize, int zSize, int strandsPerPanel, int startBurn, int bottomBurn, int endBurn);
+	void setPixel(Point *p, Point *c);
+	void setUp(int strandsPerPanel, int startBurn, int bottomBurn, int endBurn);
 	void resetPixels();
+  void show();
 	int getPixel(int x, int y, int z);
 	bool inCube(int x, int y, int z);
 	bool inCube(Point *p);
-	int update_xx(int x, int panel);
-	int xSize;
-	int ySize;
-	int zSize;
-	// TODO: could be unsigned shorts, not gonna have more than 65k lights in the cube
-	int ***cube;
+	char xSize;
+	char ySize;
+	char zSize;
 };

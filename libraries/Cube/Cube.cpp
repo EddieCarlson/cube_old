@@ -1,15 +1,16 @@
-
 #include <stdlib.h>
-#include <OctoWS2811.h>
-#include <SetUpCube.h>
+#include <Cube.h>
 
-Cube::Cube(OctoWS2811 leds_in, int x, int y, int z) {
-  leds = &leds_in;
+Cube::Cube(OctoWS2811 ledsIn, char x, char y, char z) {
+  leds = &ledsIn;
+
   xSize = x;
   ySize = y;
   zSize = z;
-  // TODO: how is this commented out? wat?
-  //cube = build_cube(xSize, ySize, zSize);
+}
+
+void Cube::show() {
+  leds->show();
 }
 
 void Cube::setPixel(int x, int y, int z, Point *c) {
@@ -40,7 +41,7 @@ bool Cube::inCube(Point *p) {
 
 void Cube::setPixel(int x, int y, int z, int r, int g, int b) {
   if (inCube(x, y, z)) {
-    leds->setPixel(cube[x][y][z], r, g, b);  
+    leds->setPixel(cube[x][y][z], r, g, b);
   }
 }
 
@@ -51,7 +52,7 @@ int Cube::getPixel(int x, int y, int z) {
   return 0;
 }
 
-// TODO: make more efficient. memset? all ints would need to be all adjacent
+// TODO: make more efficient. memset? all elements would need to be all adjacent
 void Cube::resetPixels() {
   for(int x = 0; x < xSize; x++) {
     for(int y = 0; y < ySize; y++) {
@@ -62,7 +63,7 @@ void Cube::resetPixels() {
   }
 }
 
-int Cube::update_xx(int x, int panel) {
+int Cube::updateX(int x, int panel) {
   if (panel % 2 == 0)
     return x + 1;
   else
@@ -70,22 +71,23 @@ int Cube::update_xx(int x, int panel) {
 }
 
 // TODO: use new instead of malloc. use int[][][] instead of int***??
-int *** Cube::build_cube(int xSize, int ySize, int zSize) {
-  int ***cube;
-  size_t xMalloc = sizeof(int *) * xSize;
-  size_t yMalloc = sizeof(int *) * ySize;
-  size_t zMalloc = sizeof(int *) * zSize;
-  cube = (int ***) malloc(xMalloc);
+unsigned short *** Cube::build_cube(int xSize, int ySize, int zSize) {
+  unsigned short ***cube;
+  size_t xMalloc = sizeof(unsigned short *) * xSize;
+  size_t yMalloc = sizeof(unsigned short *) * ySize;
+  size_t zMalloc = sizeof(unsigned short *) * zSize;
+  cube = (unsigned short ***) malloc(xMalloc);
   for(int x = 0; x < xSize; x++) {
-    cube[x] = (int **) malloc(yMalloc);
+    cube[x] = (unsigned short **) malloc(yMalloc);
     for(int y = 0; y < ySize; y++) {
-      cube[x][y] = (int *) malloc(zMalloc);
+      cube[x][y] = (unsigned short *) malloc(zMalloc);
     }
   }
   return cube;
 }
 
-void Cube::begin(int xSize, int ySize, int zSize, int strandsPerPanel, int startBurn, int bottomBurn, int endBurn) {
+void Cube::setUp(int strandsPerPanel, int startBurn, int bottomBurn, int endBurn) {
+  leds->begin();
   cube = build_cube(xSize, ySize, zSize);
   int index = 0;
   int x = 0;
@@ -95,14 +97,14 @@ void Cube::begin(int xSize, int ySize, int zSize, int strandsPerPanel, int start
       for(int upDown = 0; upDown < (xSize / 2); upDown++) {  // up/down column pairs per cube
         Serial.println("up");
         if (upDown != 0) {
-          x = update_xx(x, panel); // bottom of column, translate 1 in x dir if not on the first column-set
+          x = updateX(x, panel); // bottom of column, translate 1 in x dir if not on the first column-set
         }
         for(int colIndex = 0; colIndex < zSize; colIndex++) { // assign column upwards
           cube[x][panel][colIndex] = index;
           index++;
         }
         Serial.println("down");
-        x = update_xx(x, panel); // top of column, translate 1 in x direction
+        x = updateX(x, panel); // top of column, translate 1 in x direction
         for(int colIndex = zSize - 1; colIndex >= 0 ; colIndex--) { // assign column downwards
           cube[x][panel][colIndex] = index;
           index++;
