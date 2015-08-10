@@ -39,8 +39,8 @@ const int xSize = 6;
 const int ySize = 1;
 const int zSize = 7;
 
-int ***cube;
-Cube kewb(leds, xSize, ySize, zSize);
+//int ***cube;
+Cube cube(leds, xSize, ySize, zSize);
 
 
 int rainbow[180];
@@ -60,7 +60,7 @@ void setup() {
   Serial.begin(9600);
 
   setupRainbow();
-  kewb.setUp(strandsPerPanel, startBurn, bottomBurn, endBurn);
+  cube.setUp(strandsPerPanel, startBurn, bottomBurn, endBurn);
 }
 
 
@@ -76,13 +76,13 @@ void solidCircle(Point *start, Point *color, float t) {
     for(int y = 0; y < ySize; y++) {
       for(int z = 0; z < zSize; z++) {
          if (abs((x - start->x) * (x - start->x) + (y - start->y) * (y - start->y) + (z - start->z) * (z - start->z) - r2) < near * near) {
-           int curColor = kewb.getPixel(x, y, z);
+           int curColor = cube.getPixel(x, y, z);
            Point colorToSet = *color;
            if (curColor != 0) {
 //             Point curColorP = intToColor(curColor);
              colorToSet = Point(20, 150, 20);//curColorP.average(color);
            }
-           kewb.setPixel(x, y, z, colorToSet.x, colorToSet.y, colorToSet.z);
+           cube.setPixel(x, y, z, colorToSet.x, colorToSet.y, colorToSet.z);
          }
       }
     }
@@ -107,25 +107,25 @@ int max(int a, int b) {
 void square(Point *start, Point *color, float tt) {
   int t = tt;
   for(int x = start->x - t; x <= start->x + t; x ++) {
-    int curColor = 0;//kewb.getPixel(x, 0, start->z);
+    int curColor = 0;//cube.getPixel(x, 0, start->z);
     Point colorToSet = *color;
     if (curColor != 0) {
 //      Point curColorP = intToColor(curColor);
       colorToSet = Point(20, 150, 20);//curColorP.average(color);
     }
-    kewb.setPixel(x, 0, start->z - t, &colorToSet);
-    kewb.setPixel(x, 0, start->z + t, &colorToSet);
+    cube.setPixel(x, 0, start->z - t, &colorToSet);
+    cube.setPixel(x, 0, start->z + t, &colorToSet);
   }
   for(int z = start->z - t; z <= start->z + t; z ++) {
-    int curColor = 0;//kewb.getPixel(start->x, 0, z);
+    int curColor = 0;//cube.getPixel(start->x, 0, z);
     if (z == start->z - t || z == start->z + t) curColor = 0;
     Point colorToSet = *color;
     if (curColor != 0) {
 //      Point curColorP = intToColor(curColor);
       colorToSet = Point(20, 150, 20);//curColorP.average(color);
     }
-    kewb.setPixel(start->x - t, 0, z, &colorToSet);
-    kewb.setPixel(start->x + t, 0, z, &colorToSet);
+    cube.setPixel(start->x - t, 0, z, &colorToSet);
+    cube.setPixel(start->x + t, 0, z, &colorToSet);
   }
 }
 
@@ -146,55 +146,20 @@ void explodeCube() {
         for(int z = 0; z < zSize; z++) {
           Point p = Point(x, y, z);
           if (isOnCube(start, t, p)) {
-            kewb.setPixel(&p, &color);
+            cube.setPixel(&p, &color);
           }
         }
       }
     }
-    kewb.show();
+    cube.show();
     delay(100);
-    kewb.resetPixels();
+    cube.resetPixels();
   }
 }
 
 float near = 0.52;
 
-void circle(int r, float tStep) {
-  float t = 0;
 
-  while(true) {
-    float x = r * cos(t) + 2;
-    float y = r * sin(t) + 2;
-//    float x = r * (cos(t) - cos(2 * t)) + 2;
-//    float y = r * (sin(t) - sin(2 * t)) + 2;
-    Serial.println(x);
-    Serial.println(y);
-    float topX = min(max(0, floor(x + near)), xSize - 1);
-    float botX = min(max(0, ceil(x - near)), xSize - 1);
-    float topY = min(max(0, floor(y + near)), zSize - 1);
-    float botY = min(max(0, ceil(y - near)), zSize - 1);
-    Serial.println(topX);
-    Serial.println(botX);
-    Serial.println(topY);
-    Serial.println(botY);
-
-    for(int xi = botX; xi <= topX; xi++) {
-      for(int yi = botY; yi <= topY; yi++) {
-        if (abs(xi - x) < near)
-          leds.setPixel(cube[xi][0][yi], 250, 0, 126);
-      }
-    }
-    leds.show();
-    delay(5);
-    for(int xi = botX; xi <= topX; xi++) {
-      for(int yi = botY; yi <= topY; yi++) {
-        leds.setPixel(cube[xi][0][yi], 0, 0, 0);
-      }
-    }
-    leds.show();
-    t = t + tStep;
-  }
-}
 
 Point intToColor(int c) {
   short red = (c << 16) & 0xFF;
@@ -213,9 +178,9 @@ void doubleSquare() {
   while(t < 7) {
     square(&start1, &color1, t);
     square(&start2, &color2, t);
-    kewb.show();
+    cube.show();
     delay(200);
-    kewb.resetPixels();
+    cube.resetPixels();
     t++;
   }
 }
@@ -233,9 +198,9 @@ void doubleStarburst() {
   while(t < 50) {
     solidCircle(&start1, &color1, t);
     solidCircle(&start2, &color2, t - diff);
-    kewb.show();
+    cube.show();
     delay(22);
-    kewb.resetPixels();
+    cube.resetPixels();
     t++;
   }
 }
@@ -252,14 +217,6 @@ void test() {
   }
 }
 
-//void fillSpace(Point one, Point two) {
-//  for(int x = min(one.x, two.x); x <= max(one.x, two.x); x++) {
-//    for(int y = min(one.y, two.y); y <= max(one.y, two.y); y++) {
-//      for(int z = min(one.z, two.z); y <= max(one.z, two.z); z++) {
-//        kewb.setPixel(x, y, z);
-//      }
-//    }
-//  }
 
 int dimInt(int i, float f) {
   int red = (i >> 16) & 0xFF;
@@ -277,22 +234,179 @@ void manhattanSphereRad(Point *start, Point *color, float tt, int colorI) {
     return;
   }
   
-  float t = tt / 3;
+  float t = tt / 5;
+  float maxDist = 4;
+  float dimness = 0.75;
   
   for(int x = 0; x < xSize; x++) {
     for(int y = 0; y < ySize; y++) {
       for(int z = 0; z < zSize; z++) {
-        int dist = abs((x - start->x)) + abs((y - start->y)) + abs((z - start->z));
-         if (abs(dist - t) < 0.05) { // unnecessary if
-           kewb.setPixel(x, y, z, rainbow[colorI]);
-         } else if (abs(dist - t) < 2) {
-           // TODO: this factor is wrong, I think it should be: (2 - abs(t - dist)) / 2
-          kewb.setPixel(x, y, z, dimInt(rainbow[colorI], ((float) t - dist) / t));  
-         }
+        int dist = abs(abs((x - start->x)) + abs((y - start->y)) + abs((z - start->z)) - t);
+        if (dist < maxDist) {
+          float factor = (abs(maxDist - dist) / maxDist);
+          factor = factor * factor * factor * factor * factor;
+          cube.setPixel(x, y, z, dimInt(rainbow[colorI], factor * dimness));
+        }
+//         if (abs(dist - t) < 0.05) { // unnecessary if
+//           cube.setPixel(x, y, z, rainbow[colorI]);
+//         } else if (abs(dist - t) < 2) {
+//           // TODO: this factor is wrong, I think it should be: (2 - abs(t - dist)) / 2
+//          cube.setPixel(x, y, z, dimInt(rainbow[colorI], ((float) t - dist) / t));  
+//         }
       }
     }
   }
 }
+
+int colorI = 0;
+
+void manhattanSphere() {
+  Point start = Point (rand() % (xSize / 2) + (xSize / 3), 1, rand() % (zSize / 2) + (zSize / 3));
+  
+  for (int t = 0; t < 100; t++) {
+      manhattanSphereRad(&start, &start, t, colorI);
+      //manhattanSphereRad(&start, &start, t - 50, colorI);
+      cube.show();
+      delay(15);
+      colorI = (colorI + 2) % 180;
+      cube.resetPixels();
+    }
+  //delay(1000);
+}
+
+void dimTest() {
+  //Point color = Point(200, 100, 50);
+  int color = rainbow[50];
+  float fade = 0.5;
+  for(int x = 0; x < xSize; x++) {
+    for(int z = 0; z < zSize; z++) {
+      cube.setPixel(x, 0, z, color);
+    }
+    color = dimInt(color, fade);
+    //Point(color.x * fade, color.y * fade, color.z * fade);
+  } 
+  cube.show();
+  delay(1000);
+  cube.resetPixels();
+}
+
+void rainbowFade(int colorIndex) {
+  for(int x = 0; x < xSize; x++) {
+    for(int y = 0; y < ySize; y++) {
+      for(int z = 0; z < zSize; z++) {
+        cube.setPixel(x, y, z, dimInt(rainbow[(colorIndex + ((x + y + z) * 4)) % 180], 0.15));
+      }
+    }
+  }
+  cube.show();
+  delay(20);
+}
+
+
+void farFadeTest(int colorIndex) {
+  float maxDist = 3;
+  Point start = Point(2, 0, 3);
+  for(int x = 0; x < xSize; x++) {
+    for(int y = 0; y < ySize; y++) {
+      for(int z = 0; z < zSize; z++) {
+        int dist = abs(x - start.x) + abs(y - start.y) + abs(z - start.z);
+        if (dist < maxDist) {
+          float factor = (abs(maxDist - dist) / maxDist);
+          factor = factor * factor * factor;
+          cube.setPixel(x, y, z, dimInt(rainbow[50], factor));
+        }
+      }
+    }
+  }
+  cube.show();
+  delay(20);
+}
+
+char dirs[4] = {0, 4, 1, 5};
+int dirsIndex = 0;
+
+void splitter(Point p) {
+  int t = 0;
+  while(true) {
+    Point color = Point(10, 200, 50);
+    Point fadedColor = Point(color.x * 0.2, color.y * 0.2, color.z * 0.2);
+    cube.setPixel(&p, &fadedColor);
+    if (t % 3 == 2) {
+      dirsIndex = (dirsIndex + 1) % 4;
+    }
+    Point newP = p.move(dirs[dirsIndex]);
+    cube.setPixel(&newP, &color);
+    cube.show();
+    delay(200);
+    cube.resetPixels();
+    t++;
+    p = newP;
+  }
+}
+    
+void loop() {
+  //Serial.println("loop");
+  //circle(2, 0.07);
+  //rain2();
+  //explodeCube();
+  ///doubleStarburst();
+  //test();
+  //doubleSquare();
+  //dimTest();
+  //rainbowFade(colorI);
+  //farFadeTest(colorI);
+  //colorI = (colorI + 1) % 180;
+  manhattanSphere();
+  //splitter(Point(2, 0, 2));
+}
+
+
+//void circle(int r, float tStep) {
+//  float t = 0;
+//
+//  while(true) {
+//    float x = r * cos(t) + 2;
+//    float y = r * sin(t) + 2;
+////    float x = r * (cos(t) - cos(2 * t)) + 2;
+////    float y = r * (sin(t) - sin(2 * t)) + 2;
+//    Serial.println(x);
+//    Serial.println(y);
+//    float topX = min(max(0, floor(x + near)), xSize - 1);
+//    float botX = min(max(0, ceil(x - near)), xSize - 1);
+//    float topY = min(max(0, floor(y + near)), zSize - 1);
+//    float botY = min(max(0, ceil(y - near)), zSize - 1);
+//    Serial.println(topX);
+//    Serial.println(botX);
+//    Serial.println(topY);
+//    Serial.println(botY);
+//
+//    for(int xi = botX; xi <= topX; xi++) {
+//      for(int yi = botY; yi <= topY; yi++) {
+//        if (abs(xi - x) < near)
+//          leds.setPixel(cube[xi][0][yi], 250, 0, 126);
+//      }
+//    }
+//    leds.show();
+//    delay(5);
+//    for(int xi = botX; xi <= topX; xi++) {
+//      for(int yi = botY; yi <= topY; yi++) {
+//        leds.setPixel(cube[xi][0][yi], 0, 0, 0);
+//      }
+//    }
+//    leds.show();
+//    t = t + tStep;
+//  }
+//}
+
+
+//void fillSpace(Point one, Point two) {
+//  for(int x = min(one.x, two.x); x <= max(one.x, two.x); x++) {
+//    for(int y = min(one.y, two.y); y <= max(one.y, two.y); y++) {
+//      for(int z = min(one.z, two.z); y <= max(one.z, two.z); z++) {
+//        cube.setPixel(x, y, z);
+//      }
+//    }
+//  }
 
 
 
@@ -331,48 +445,3 @@ unsigned int h2rgb(unsigned int v1, unsigned int v2, unsigned int hue)
 	if (hue < 240) return (v1 * 60 + (v2 - v1) * (240 - hue)) * colorFactor;
 	return v1 * 60;
 }
-
-int colorI = 0;
-
-void manhattanSphere() {
-  Point start = Point (rand() % (xSize / 2) + (xSize / 3), 1, rand() % (zSize / 2) + (zSize / 3));
-  
-  for (int t = 0; t < 80; t++) {
-      manhattanSphereRad(&start, &start, t, colorI);
-      //manhattanSphereRad(&start, &start, t - 50, colorI);
-      kewb.show();
-      delay(20);
-      colorI = (colorI + 1) % 180;
-      kewb.resetPixels();
-    }
-  delay(1000);
-}
-    
-void loop() {
-  //Serial.println("loop");
-  //circle(2, 0.07);
-  //rain2();
-  //explodeCube();
-  ///doubleStarburst();
-  //test();
-  //doubleSquare();
-//  Point c = Point(255, 0, 0);
-//  for(int i = 0; i < xSize; i++) {
-//    Point y0 = Point(i, 0, 2);
-//    Point y1 = Point(i, 1, 2);
-//    
-//    kewb.setPixel(&y0, &c);
-//    kewb.setPixel(&y1, &c);
-//    leds.show();
-//    delay(1000);
-//    kewb.resetPixels();
-//  }
-  manhattanSphere();
-//  Point start = Point(2, 0, 2);
-//  Point occupied[300] = Point(0, 0, 0);
-//  occupied[0] = start;
-//  occupied[1] = start.move(0);
-//  short start_dir = 0;
-//  wander(occupied, 2, start_dir);
-}
-
