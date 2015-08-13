@@ -17,27 +17,27 @@ const int config = WS2811_GRB | WS2811_800kHz;
 
 OctoWS2811 leds(ledsPerStrip, displayMemory, drawingMemory, config);
 
-//int top_burn = 0;
-//int bottomBurn = 3;
-//int startBurn = 2;
-//int colsPerStrand = 6;
-//int endBurn = 0;
-//int strandsPerPanel = 1;
-//
-//const int xSize = 6;
-//const int ySize = 7;
-//const int zSize = 7;
-
 int top_burn = 0;
-int bottomBurn = 1;
-int startBurn = 3;
+int bottomBurn = 3;
+int startBurn = 2;
 int colsPerStrand = 6;
-int endBurn = 2;
+int endBurn = 0;
 int strandsPerPanel = 1;
 
 const int xSize = 6;
-const int ySize = 1;
+const int ySize = 7;
 const int zSize = 7;
+
+//int top_burn = 0;
+//int bottomBurn = 1;
+//int startBurn = 3;
+//int colsPerStrand = 6;
+//int endBurn = 2;
+//int strandsPerPanel = 1;
+//
+//const int xSize = 6;
+//const int ySize = 1;
+//const int zSize = 7;
 
 //int ***cube;
 Cube cube(leds, xSize, ySize, zSize);
@@ -236,7 +236,7 @@ void manhattanSphereRad(Point *start, Point *color, float tt, int colorI) {
   
   float t = tt / 5;
   float maxDist = 4;
-  float dimness = 0.75;
+  float dimness = 0.2;
   
   for(int x = 0; x < xSize; x++) {
     for(int y = 0; y < ySize; y++) {
@@ -261,13 +261,13 @@ void manhattanSphereRad(Point *start, Point *color, float tt, int colorI) {
 int colorI = 0;
 
 void manhattanSphere() {
-  Point start = Point (rand() % (xSize / 2) + (xSize / 3), 1, rand() % (zSize / 2) + (zSize / 3));
+  Point start = Point (rand() % xSize, rand() % ySize, rand() % zSize);
   
   for (int t = 0; t < 100; t++) {
       manhattanSphereRad(&start, &start, t, colorI);
       //manhattanSphereRad(&start, &start, t - 50, colorI);
       cube.show();
-      delay(15);
+      delay(9);
       colorI = (colorI + 2) % 180;
       cube.resetPixels();
     }
@@ -290,11 +290,32 @@ void dimTest() {
   cube.resetPixels();
 }
 
+float breathingFactor = 1;
+bool up = true;
+
+void updateBreathingFactor() {
+  if (breathingFactor >= 1.75) {
+    up = false;
+    Serial.println("top");
+  } else if (breathingFactor <= 0.5) {
+    Serial.println("bottom");
+    up = true; 
+  }
+  if (up) {
+    breathingFactor += 0.003;
+  } else {
+    breathingFactor -= 0.003;
+  }
+}
+
 void rainbowFade(int colorIndex) {
+  updateBreathingFactor();
+  
   for(int x = 0; x < xSize; x++) {
     for(int y = 0; y < ySize; y++) {
       for(int z = 0; z < zSize; z++) {
-        cube.setPixel(x, y, z, dimInt(rainbow[(colorIndex + ((x + y + z) * 4)) % 180], 0.15));
+        cube.setPixel(x, y, z, dimInt(rainbow[(colorIndex + ((int)((x + y + z) * 3 * breathingFactor))) % 180], 0.15));
+        //cube.setPixel(x, y, z, 10, 255, 255);
       }
     }
   }
