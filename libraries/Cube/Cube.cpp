@@ -23,7 +23,7 @@ void Cube::setPixel(int x, int y, int z, int color) {
   }
 }
 
-void Cube::setPixel(Point *p, Point *c) {
+void Cube::setPixel(const Point *p, Point *c) {
   setPixel(p->x, p->y, p->z, c->x, c->y, c->z);
 }
 

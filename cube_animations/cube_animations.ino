@@ -1,8 +1,18 @@
-#include <Cube.h>
-
 #include <OctoWS2811.h>
+
+#include <Color.h>
+#include <Cube.h>
+#include <Dumb.h>
+#include <MovingCube.h>
+#include <Point.h>
+
+
 #include <array>
 #include <math.h>
+#include <iterator>
+#include <list>
+#include <vector>
+#include <deque>
 
 
 int ledPin = 13;
@@ -46,11 +56,10 @@ Cube cube(leds, xSize, ySize, zSize);
 int rainbow[180];
 
 void setupRainbow() {
+  int saturation = 100;
+  int lightness = 50;
   for (int i=0; i<180; i++) {
     int hue = i * 2;
-    int saturation = 100;
-    int lightness = 50;
-    
     rainbow[i] = makeColor(hue, saturation, lightness);
   }
 }
@@ -62,7 +71,6 @@ void setup() {
   setupRainbow();
   cube.setUp(strandsPerPanel, startBurn, bottomBurn, endBurn);
 }
-
 
 void solidCircle(Point *start, Point *color, float t) {
   if (t < 0) {
@@ -105,28 +113,36 @@ int max(int a, int b) {
 }
 
 void square(Point *start, Point *color, float tt) {
-  int t = tt;
-  for(int x = start->x - t; x <= start->x + t; x ++) {
-    int curColor = 0;//cube.getPixel(x, 0, start->z);
-    Point colorToSet = *color;
-    if (curColor != 0) {
-//      Point curColorP = intToColor(curColor);
-      colorToSet = Point(20, 150, 20);//curColorP.average(color);
+  int t = tt / 5;
+  
+  for(int x = 0; x < xSize; x++) {
+    for(int y = 0; y < ySize; y++) {
+      for(int z = 0; z < zSize; z++) {
+        
+      }
     }
-    cube.setPixel(x, 0, start->z - t, &colorToSet);
-    cube.setPixel(x, 0, start->z + t, &colorToSet);
-  }
-  for(int z = start->z - t; z <= start->z + t; z ++) {
-    int curColor = 0;//cube.getPixel(start->x, 0, z);
-    if (z == start->z - t || z == start->z + t) curColor = 0;
-    Point colorToSet = *color;
-    if (curColor != 0) {
-//      Point curColorP = intToColor(curColor);
-      colorToSet = Point(20, 150, 20);//curColorP.average(color);
-    }
-    cube.setPixel(start->x - t, 0, z, &colorToSet);
-    cube.setPixel(start->x + t, 0, z, &colorToSet);
-  }
+  }  
+//  for(int x = start->x - t / 2; x <= start->x + t / 2; x++) {
+//    int curColor = 0;//cube.getPixel(x, 0, start->z);
+//    Point colorToSet = *color;
+//    if (curColor != 0) {
+////      Point curColorP = intToColor(curColor);
+//      colorToSet = Point(20, 150, 20);//curColorP.average(color);
+//    }
+//    cube.setPixel(x, t, start->z - t / 2, &colorToSet);
+//    cube.setPixel(x, t, start->z + t / 2, &colorToSet);
+//  }
+//  for(int z = start->z - t / 2; z <= start->z + t / 2; z++) {
+//    int curColor = 0;//cube.getPixel(start->x, 0, z);
+//    if (z == start->z - t || z == start->z + t) curColor = 0;
+//    Point colorToSet = *color;
+//    if (curColor != 0) {
+////      Point curColorP = intToColor(curColor);
+//      colorToSet = Point(20, 150, 20);//curColorP.average(color);
+//    }
+//    cube.setPixel(start->x - t / 2, t, z, &colorToSet);
+//    cube.setPixel(start->x + t / 2, t, z, &colorToSet);
+//  }
 }
 
 
@@ -185,6 +201,20 @@ void doubleSquare() {
   }
 }
 
+void flyingSquare() {
+  float t = 0;
+  Point start1 = Point (rand() % 3 + 2, 0, rand() % 3 + 1);
+  
+  Point color1 = Point (20, 90, 160);
+  while(t < 7) {
+    square(&start1, &color1, t);
+    cube.show();
+    delay(50);
+    cube.resetPixels();
+    t++;
+  }
+}
+
 void doubleStarburst() {
   float t = 0;
   int diff = 0;//rand() % 10 + 20; 
@@ -236,7 +266,7 @@ void manhattanSphereRad(Point *start, Point *color, float tt, int colorI) {
   
   float t = tt / 5;
   float maxDist = 4;
-  float dimness = 0.2;
+  float dimness = 0.4;
   
   for(int x = 0; x < xSize; x++) {
     for(int y = 0; y < ySize; y++) {
@@ -314,7 +344,7 @@ void rainbowFade(int colorIndex) {
   for(int x = 0; x < xSize; x++) {
     for(int y = 0; y < ySize; y++) {
       for(int z = 0; z < zSize; z++) {
-        cube.setPixel(x, y, z, dimInt(rainbow[(colorIndex + ((int)((x + y + z) * 3 * breathingFactor))) % 180], 0.15));
+        cube.setPixel(x, y, z, dimInt(rainbow[(colorIndex + ((int)((x + y + z) * 3 * breathingFactor))) % 180], 0.2));
         //cube.setPixel(x, y, z, 10, 255, 255);
       }
     }
@@ -343,42 +373,287 @@ void farFadeTest(int colorIndex) {
   delay(20);
 }
 
-char dirs[4] = {0, 4, 1, 5};
+dirs_t dirs[4] = {PX, PY, NX, NY};
 int dirsIndex = 0;
 
-void splitter(Point p) {
-  int t = 0;
-  while(true) {
-    Point color = Point(10, 200, 50);
-    Point fadedColor = Point(color.x * 0.2, color.y * 0.2, color.z * 0.2);
-    cube.setPixel(&p, &fadedColor);
-    if (t % 3 == 2) {
-      dirsIndex = (dirsIndex + 1) % 4;
-    }
-    Point newP = p.move(dirs[dirsIndex]);
-    cube.setPixel(&newP, &color);
-    cube.show();
-    delay(200);
-    cube.resetPixels();
-    t++;
-    p = newP;
+dirs_t nonX[4] = {PY, NY, PZ, NZ};
+dirs_t nonY[4] = {PX, NX, PZ, NZ};
+dirs_t nonZ[4] = {PY, NY, PX, NX};
+
+dirs_t newDir(dirs_t cur) {
+  switch(cur) {
+    case PX:
+    case NX: nonX[rand() % 4]; break;
+    case PY:
+    case NY: nonY[rand() % 4]; break;
+    case PZ:
+    case NZ: nonZ[rand() % 4]; break;
+    default: NX;
   }
 }
-    
+
+class Snake {
+public:
+  std::deque<Point *> points;
+  dirs_t dir;
+  int age;
+  Snake(Point *p, dirs_t dir) {
+    points.push_front(p);
+    dir = dir;
+    age = 0;
+  }
+  void move(bool grow = false) {
+    Point* newHead = points.front()->move(dir);
+    points.push_front(newHead);
+    if (!grow) {
+      Point* last = points.back();
+      delete last;
+    }
+  }
+  int size() {
+    points.size();
+  }
+  void setPixels(Cube c) {
+    Serial.println("snake set pixel");
+    Point color = Point(200, 10, 50);
+    int s = points.size();
+    Serial.println(s);
+    for (int i = 0; i < s; i++) {
+      Serial.println(points.at(i)->z);
+      cube.setPixel(points.at(i), &color);
+    }
+  }
+};
+
+void std::__throw_out_of_range(char const*) {
+  Serial.println("out of range");
+}
+
+void splitter(Point p) {
+  delay(2000);
+  int t = 0;
+  Point color = Point(10, 200, 50);
+  Point fadedColor = Point(color.x * 0.2, color.y * 0.2, color.z * 0.2);
+  std::deque<Snake *> snakes;
+  Point* ps = new Point(2, 2, 2);
+  Snake* s = new Snake(ps, PZ);
+  snakes.push_back(s);
+  while(true) {
+    Serial.println("while");
+    int size = snakes.size();
+    for(int i = 0; i < size; i++) {
+      Serial.println("for");
+      Snake* snake = snakes.front();
+      snakes.pop_front();
+      if (snake->age % 3 == 2) {
+        snake->dir = newDir(snake->dir);
+      }
+      snake->setPixels(cube);
+      snake->age = snake->age + 1;
+      snake->move();
+      snakes.push_back(snake);
+    }
+    cube.show();
+    delay(250);
+    cube.resetPixels();
+  }
+}
+
+void std::__throw_length_error(char const*) {
+  Serial.println("throwing length error");
+}
+
+void std::__detail::_List_node_base::_M_hook(std::__detail::_List_node_base*) {
+  Serial.println("ok");
+}
+
+Point *randomTopPixel() {
+  new Point(rand() % xSize, rand() % ySize, zSize - 1);
+}
+
+void std::__throw_bad_alloc() {
+  Serial.println("hi");
+}
+
+void rain() {
+  Point color = Point(250, 50, 0);
+  Point fadedColor = Point(color.x * 0.1, color.y * 0.1, color.z * 0.1);
+
+  std::deque<Point *> points;
+  Point *p = randomTopPixel();
+  points.push_back(p);
+  while(true) {
+    int size = points.size();
+    Serial.println(size);
+    for(int i = 0; i < size; i++) {
+      Point* cur = points.front();
+      points.pop_front();
+      cube.setPixel(cur, &color);
+      Point* a = cur->move(PZ);
+      cube.setPixel(a, &fadedColor);
+      delete a;
+      cur->move_in_place(NZ);
+      if (cube.inCube(cur)) {
+        points.push_back(cur);
+      } else {
+        delete cur;
+      }
+    }
+    cube.show();
+    points.push_back(randomTopPixel());
+    delay(100);
+    cube.resetPixels();
+  }
+}
+
+void snake() {
+  Point color = Point(10, 200, 50);
+  Point fadedColor = Point(color.x * 0.1, color.y * 0.1, color.z * 0.1);
+
+  std::deque<Point *> points;
+  Point *start = new Point(2, 2, 2);
+  points.push_back(start);
+}
+
+void setXY(int z) {
+  Point color = Point(30, 0, 255);
+  Point intersect = Point(0, 255, 0);
+  for(int x = 0; x < xSize; x++) {
+    for(int y = 0; y < ySize; y++) {
+      int cur = cube.getPixel(x, y, z);
+      if (cur != 0) {
+        cube.setPixel(x, y, z, &intersect);
+      } else {
+        cube.setPixel(x, y, z, &color);
+      }
+    }
+  }
+}
+
+void setYZ(int x) {
+  Point color = Point(30, 0, 255);
+  Point intersect = Point(0, 255, 0);
+  for(int z = 0; z < zSize; z++) {
+    for(int y = 0; y < ySize; y++) {
+      int cur = cube.getPixel(x, y, z);
+      if (cur != 0) {
+        cube.setPixel(x, y, z, &intersect);
+      } else {
+        cube.setPixel(x, y, z, &color);
+      }
+    }
+  }
+}
+
+void dualSweep() {
+  for(int i = 0; i < zSize; i++) {
+    setXY(i);
+    setYZ(i);
+    cube.show();
+    delay(100);
+    cube.resetPixels();
+  }
+}
+
+void drawXZLine(int y, int z) {
+  Serial.println("drawXZLine");
+  Serial.println(y);
+  Serial.println(z);
+  Point color = Point(30, 0, 255);
+  for (int x = 0; x < xSize; x++) {
+    //for (int zi = 0; zi <= z; zi++) {
+      cube.setPixel(x, y, z, &color);
+    //}
+  }
+}
+
+int zeez[7] = {3, 4, 5, 6, 5, 4, 3};
+
+void wave() {
+  delay(2000);
+  float t = 0;
+  float pi = 3.14159;
+  Serial.println(sin(pi));
+  Serial.println(sin(1));
+  Serial.println(sin(180));
+  while(true) {
+    for(float y = 0; y < ySize; y++) {
+      int z = (zSize / 2) + (3 * sin((y * 1.25 / pi) + t));
+      drawXZLine((int) y, (int) z);
+    }
+    cube.show();
+    delay(100);
+    cube.resetPixels();
+    t += 0.5;
+  }
+}
+
+
+
+RainDrop* randomTopDrop() {
+  Point *p = randomTopPixel();
+  Point *c = new Point(220 + (rand() % 25), rand() % 20, rand() % 20);
+  return new RainDrop(p, c, (rand() % 4) + 2);
+}
+
+void theMatrix() {
+  Point color = Point(250, 50, 0);
+  Point fadedColor = Point(color.x * 0.1, color.y * 0.1, color.z * 0.1);
+
+  std::deque<RainDrop *> drops;
+  RainDrop* d = randomTopDrop();
+  drops.push_back(d);
+  int colorI = 0;
+  while(true) {
+    colorI = (colorI + 2) % 180;
+    for(int i = 350; i < 400; i++) {
+      leds.setPixel(i, rainbow[colorI]);
+    }
+    int size = drops.size();
+    for(int i = 0; i < size; i++) {
+      RainDrop* cur = drops.front();
+      drops.pop_front();
+      Point* curPix = cur->point;
+      cube.setPixel(curPix, cur->color);
+      Point* a = curPix->move(PZ);
+      cube.setPixel(a, cur->fadedColor);
+      delete a;
+      cur->move();
+      if (cube.inCube(cur->point)) {
+        drops.push_back(cur);
+      } else {
+        delete cur;
+      }
+    }
+    cube.show();
+    if (rand() % 4 != 0) {
+      drops.push_back(randomTopDrop());
+    }
+    delay(20);
+    cube.resetPixels();
+  }
+}
+
+
 void loop() {
   //Serial.println("loop");
   //circle(2, 0.07);
   //rain2();
-  //explodeCube();
   ///doubleStarburst();
   //test();
   //doubleSquare();
   //dimTest();
-  //rainbowFade(colorI);
+  //flyingSquare();
   //farFadeTest(colorI);
+  //explodeCube();
+  //rainbowFade(colorI);
   //colorI = (colorI + 1) % 180;
-  manhattanSphere();
+  //manhattanSphere();
   //splitter(Point(2, 0, 2));
+  //rain();
+  //dualSweep();
+  //wave();
+  theMatrix();
 }
 
 
