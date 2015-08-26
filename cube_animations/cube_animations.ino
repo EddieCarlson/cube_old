@@ -17,8 +17,7 @@
 
 int ledPin = 13;
 
-const int ledsPerStrip = 350;
-const int numStrips = 2;
+const int ledsPerStrip = 600;
 
 DMAMEM int displayMemory[ledsPerStrip*6];
 int drawingMemory[ledsPerStrip*6];
@@ -26,22 +25,34 @@ int drawingMemory[ledsPerStrip*6];
 const int config = WS2811_GRB | WS2811_800kHz;
 
 OctoWS2811 leds(ledsPerStrip, displayMemory, drawingMemory, config);
-
+/*
 int top_burn = 0;
 int bottomBurn = 3;
 int startBurn = 2;
-int colsPerStrand = 6;
 int endBurn = 0;
 int strandsPerPanel = 1;
 
 const int xSize = 6;
 const int ySize = 7;
 const int zSize = 7;
+*/
+
+
+int top_burn = 0;
+int bottomBurn = 1;
+int startBurn = 0;
+int endBurn = 1;
+int strandsPerPanel = 3;
+
+const int xSize = 12;
+const int ySize = 12;
+const int zSize = 12;
+
+
 
 //int top_burn = 0;
 //int bottomBurn = 1;
 //int startBurn = 3;
-//int colsPerStrand = 6;
 //int endBurn = 2;
 //int strandsPerPanel = 1;
 //
@@ -54,6 +65,7 @@ Cube cube(leds, xSize, ySize, zSize);
 
 
 int rainbow[180];
+int rainbow4[180];
 
 void setupRainbow() {
   int saturation = 100;
@@ -68,6 +80,7 @@ void setup() {
   pinMode(ledPin, OUTPUT);
   Serial.begin(9600);
 
+  delay(1000);
   setupRainbow();
   cube.setUp(strandsPerPanel, startBurn, bottomBurn, endBurn);
 }
@@ -258,23 +271,42 @@ int dimInt(int i, float f) {
   return ((red << 16) & 0xFF0000) | ((green << 8) & 0x00FF00) | (blue & 0xFF);
 }
 
+float InvSqrt(float x)
+{
+   float xhalf = 0.5f*x;
+   int i = *(int*)&x; // get bits for floating value
+   i = 0x5f375a86- (i>>1); // gives initial guess y0
+   x = *(float*)&i; // convert bits back to float
+   x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
+   return x;
+}
+
 void manhattanSphereRad(Point *start, Point *color, float tt, int colorI) {
   
   if (tt < 0) {
     return;
   }
   
-  float t = tt / 5;
-  float maxDist = 4;
+  float t = tt / 3;
+  //float t = (tt * tt / 25) ;
+  float maxDist = 40;
   float dimness = 0.4;
+  long startT = millis();
   
   for(int x = 0; x < xSize; x++) {
     for(int y = 0; y < ySize; y++) {
       for(int z = 0; z < zSize; z++) {
-        int dist = abs(abs((x - start->x)) + abs((y - start->y)) + abs((z - start->z)) - t);
+        //int dist = abs(abs((x - start->x)) + abs((y - start->y)) + abs((z - start->z)) - t);
+        int xd = x - start->x;
+        int yd = y - start->y;
+        int zd = z - start->z;
+        int dist = abs((xd * xd) + (yd * yd) + (zd * zd) - t * t);
         if (dist < maxDist) {
           float factor = (abs(maxDist - dist) / maxDist);
-          factor = factor * factor * factor * factor * factor;
+          float factor1 = factor;
+          factor = factor * factor;
+          factor = factor * factor1;
+          factor = factor * factor;
           cube.setPixel(x, y, z, dimInt(rainbow[colorI], factor * dimness));
         }
 //         if (abs(dist - t) < 0.05) { // unnecessary if
@@ -286,20 +318,48 @@ void manhattanSphereRad(Point *start, Point *color, float tt, int colorI) {
       }
     }
   }
+  long duration = millis() - startT;
+  Serial.print("manSphereRad: ");
+  Serial.println(duration);
 }
 
 int colorI = 0;
 
+void sphere() {
+  Point start = Point (rand() % xSize, rand() % ySize, rand() % zSize);
+  
+  float t = 0.1;
+  while(t < 30) {
+    manhattanSphereRad(&start, &start, t * 2, colorI);
+    cube.show();
+    //delay(9);
+    colorI = (colorI + 2) % 180;
+    long start = millis();
+    cube.resetPixels();
+    long duration = millis() - start;
+    Serial.print("reset took: ");
+    Serial.println(duration);
+    Serial.println(t);
+    t = pow((pow(t, 1.5) + 2), 2.0/3.0);
+    //delay(100);
+  }
+  //delay(1000);
+}
+
 void manhattanSphere() {
   Point start = Point (rand() % xSize, rand() % ySize, rand() % zSize);
   
-  for (int t = 0; t < 100; t++) {
-      manhattanSphereRad(&start, &start, t, colorI);
+  for (int t = 0; t < 75; t++) {
+      manhattanSphereRad(&start, &start, t * 2, colorI);
       //manhattanSphereRad(&start, &start, t - 50, colorI);
       cube.show();
-      delay(9);
+      //delay(9);
       colorI = (colorI + 2) % 180;
+      long start = millis();
       cube.resetPixels();
+      long duration = millis() - start;
+      Serial.print("reset took: ");
+      Serial.println(duration);
     }
   //delay(1000);
 }
@@ -338,19 +398,24 @@ void updateBreathingFactor() {
   }
 }
 
+long curMillis = 0;
+
 void rainbowFade(int colorIndex) {
   updateBreathingFactor();
   
+  curMillis = millis();
   for(int x = 0; x < xSize; x++) {
     for(int y = 0; y < ySize; y++) {
       for(int z = 0; z < zSize; z++) {
-        cube.setPixel(x, y, z, dimInt(rainbow[(colorIndex + ((int)((x + y + z) * 3 * breathingFactor))) % 180], 0.2));
+        cube.setPixel(x, y, z, dimInt(rainbow[(colorIndex + ((int)((x + y + z) * 3 * breathingFactor))) % 180], 0.1));
         //cube.setPixel(x, y, z, 10, 255, 255);
       }
     }
   }
   cube.show();
-  delay(20);
+  long duration = millis() - curMillis;
+  Serial.println(duration);
+  //delay(20);
 }
 
 
@@ -570,7 +635,7 @@ void drawXZLine(int y, int z) {
 int zeez[7] = {3, 4, 5, 6, 5, 4, 3};
 
 void wave() {
-  delay(2000);
+  //delay(2000);
   float t = 0;
   float pi = 3.14159;
   Serial.println(sin(pi));
@@ -578,11 +643,11 @@ void wave() {
   Serial.println(sin(180));
   while(true) {
     for(float y = 0; y < ySize; y++) {
-      int z = (zSize / 2) + (3 * sin((y * 1.25 / pi) + t));
+      int z = (zSize / 2) + (5 * sin((y / pi) + t));
       drawXZLine((int) y, (int) z);
     }
     cube.show();
-    delay(100);
+    delay(80);
     cube.resetPixels();
     t += 0.5;
   }
@@ -596,6 +661,11 @@ RainDrop* randomTopDrop() {
   return new RainDrop(p, c, (rand() % 4) + 2);
 }
 
+RainDrop* randomTopDrop(Point* color) {
+  Point *p = randomTopPixel();
+  return new RainDrop(p, color, (rand() % 4) + 2);
+}
+
 void theMatrix() {
   Point color = Point(250, 50, 0);
   Point fadedColor = Point(color.x * 0.1, color.y * 0.1, color.z * 0.1);
@@ -605,10 +675,6 @@ void theMatrix() {
   drops.push_back(d);
   int colorI = 0;
   while(true) {
-    colorI = (colorI + 2) % 180;
-    for(int i = 350; i < 400; i++) {
-      leds.setPixel(i, rainbow[colorI]);
-    }
     int size = drops.size();
     for(int i = 0; i < size; i++) {
       RainDrop* cur = drops.front();
@@ -617,19 +683,27 @@ void theMatrix() {
       cube.setPixel(curPix, cur->color);
       Point* a = curPix->move(PZ);
       cube.setPixel(a, cur->fadedColor);
-      delete a;
+      a->move_in_place(PZ);
+      cube.setPixel(a, cur->moreFadedColor);
+      a->move_in_place(PZ);
+      cube.setPixel(a, cur->mostFadedColor);
       cur->move();
-      if (cube.inCube(cur->point)) {
+      if (cube.inCube(cur->point) || cube.inCube(a)) {
         drops.push_back(cur);
       } else {
         delete cur;
       }
+      delete a;
     }
     cube.show();
-    if (rand() % 4 != 0) {
-      drops.push_back(randomTopDrop());
+    if (rand() % 4 > 1) {
+      int colorIrand = (colorI + rand() % 12) % 180;
+      drops.push_back(randomTopDrop(new Point(rainbow[colorIrand])));
+      if (rand() % 4 == 0) {
+        colorI = (colorI + 1) % 180;
+      }
     }
-    delay(20);
+    delay(35);
     cube.resetPixels();
   }
 }
@@ -649,11 +723,23 @@ void loop() {
   //rainbowFade(colorI);
   //colorI = (colorI + 1) % 180;
   //manhattanSphere();
+  sphere();
   //splitter(Point(2, 0, 2));
   //rain();
   //dualSweep();
   //wave();
-  theMatrix();
+  //theMatrix();
+
+/*
+  colorI += 1;
+  colorI %= 180;
+  for(int i = 0; i < 1800; i++) {
+    leds.setPixel(i, dimInt(rainbow[colorI], 0.05));
+  }
+  leds.show();
+  delay(20);
+  Serial.println(colorI);
+*/
 }
 
 

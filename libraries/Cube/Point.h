@@ -17,6 +17,12 @@ class Point {
     z = _z;
   }
 
+  Point(int c) {
+    x = (c >> 16) & 0xFF;
+    y = (c >> 8) & 0xFF;
+    z = c & 0xFF;
+  }
+
   // Passing by value would copy? doesn't really matter here...what's the accepted convention?
   Point average(Point *other) {
     return Point((x + other->x) / 2, (y + other->y) / 2, (z + other->z) / 2);
