@@ -89,66 +89,24 @@ int *** Cube::build_cube(int xSize, int ySize, int zSize) {
 void Cube::setUp(int strandsPerPanel, int startBurn, int bottomBurn, int endBurn) {
   leds->begin();
   cube = build_cube(xSize, ySize, zSize);
-  for(int x = 0; x < xSize; x++) {
-    for(int y = 0; y < ySize; y++) {
-      for(int z = 0; z < zSize; z++) {
-        Serial.print(x);
-        Serial.print(" ");
-        Serial.print(y);
-        Serial.print(" ");
-        Serial.print(z);
-        Serial.print(" ");
-        cube[x][y][z] = 73;
-      }
-    }
-  }
-  Serial.println();
 
   int index = 0;
   int x = 0;
   Serial.println("set up");
   for(int panel = 0; panel < ySize; panel++) { // panels per cube
-    //Serial.print("panel: ");
-    //Serial.println(panel);
-    //for(int strand = 0; strand < strandsPerPanel; strand++) {
-      //Serial.print("strand: ");
-      //Serial.println(strand);
       index += startBurn; // burn begining of strand
       for(int upDown = 0; upDown < (xSize / 2); upDown++) {  // up/down column pairs per cube
-        Serial.print("xSize: ");
-        Serial.println(xSize);
-        Serial.print("upDown: ");
-        Serial.print(upDown);
-        //Serial.println("up");
+
         if (upDown != 0) {
           x = updateX(x, panel); // bottom of column, translate 1 in x dir if not on the first column-set
         }
         for(int colIndex = 0; colIndex < zSize; colIndex++) { // assign column upwards
-          Serial.print(x);
-          Serial.print(", ");
-          Serial.print(panel);
-          Serial.print(", ");
-          Serial.println(colIndex);
-          cube[x][panel][colIndex] = index;
           cube[x][panel][colIndex] = index;
           index++;
         }
-        //Serial.println("down");
         x = updateX(x, panel); // top of column, translate 1 in x direction
-        //Serial.println("x updated");
         for(int colIndex = zSize - 1; colIndex >= 0 ; colIndex--) { // assign column downwards
-          //Serial.print("colIndex: ");
-          //Serial.println(colIndex);
-          //Serial.print("assigning index: ");
-          //Serial.print(index);
-          //Serial.print("x: ");
-          Serial.print(x);
-          Serial.print(", ");
-          Serial.print(panel);
-          Serial.print(", ");
-          Serial.println(colIndex);
           cube[x][panel][colIndex] = index;
-          //Serial.println("after assign");
           index++;
         }
         index += bottomBurn;

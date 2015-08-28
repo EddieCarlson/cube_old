@@ -329,7 +329,7 @@ void sphere() {
   Point start = Point (rand() % xSize, rand() % ySize, rand() % zSize);
   
   float t = 0.1;
-  while(t < 30) {
+  while(t < 31.3) {
     manhattanSphereRad(&start, &start, t * 2, colorI);
     cube.show();
     //delay(9);
@@ -343,6 +343,7 @@ void sphere() {
     t = pow((pow(t, 1.5) + 2), 2.0/3.0);
     //delay(100);
   }
+  delay(710);
   //delay(1000);
 }
 
@@ -382,6 +383,10 @@ void dimTest() {
 
 float breathingFactor = 1;
 bool up = true;
+int fadeDelayMax = 30;
+int fadeDelay = 30;
+int fadeIterations = 0;
+bool fadeDelayUp = false;
 
 void updateBreathingFactor() {
   if (breathingFactor >= 1.75) {
@@ -398,16 +403,34 @@ void updateBreathingFactor() {
   }
 }
 
+void updateFadeSpeed() {
+  fadeIterations++;
+  if (fadeIterations == 10) {
+    if (fadeDelay >= fadeDelayMax) {
+      fadeDelayUp = false;
+    } else if (fadeDelay <= 0) {
+      fadeDelayUp = true;
+    }
+
+    if (fadeDelayUp) {
+      fadeDelay++;
+    } else {
+      fadeDelay--;
+    }
+  }
+}
+
 long curMillis = 0;
 
 void rainbowFade(int colorIndex) {
   updateBreathingFactor();
+  //updateFadeSpeed();
   
   curMillis = millis();
   for(int x = 0; x < xSize; x++) {
     for(int y = 0; y < ySize; y++) {
       for(int z = 0; z < zSize; z++) {
-        cube.setPixel(x, y, z, dimInt(rainbow[(colorIndex + ((int)((x + y + z) * 3 * breathingFactor))) % 180], 0.1));
+        cube.setPixel(x, y, z, dimInt(rainbow[(colorIndex + ((int)((x + y + z) * 3 * breathingFactor))) % 180], 0.17));
         //cube.setPixel(x, y, z, 10, 255, 255);
       }
     }
@@ -415,6 +438,8 @@ void rainbowFade(int colorIndex) {
   cube.show();
   long duration = millis() - curMillis;
   Serial.println(duration);
+  //delay(fadeDelay);
+  delay(3);
   //delay(20);
 }
 
@@ -634,6 +659,25 @@ void drawXZLine(int y, int z) {
 
 int zeez[7] = {3, 4, 5, 6, 5, 4, 3};
 
+void wave2() {
+  //delay(2000);
+  float t = 0;
+  float pi = 3.14159;
+  Serial.println(sin(pi));
+  Serial.println(sin(1));
+  Serial.println(sin(180));
+  while(true) {
+    for(float y = 0; y < ySize; y++) {
+      int z = (zSize / 2) + (5 * sin((y / pi) + t));
+      drawXZLine((int) y, (int) z);
+    }
+    cube.show();
+    delay(80);
+    cube.resetPixels();
+    t += 0.5;
+  }
+}
+
 void wave() {
   //delay(2000);
   float t = 0;
@@ -666,7 +710,7 @@ RainDrop* randomTopDrop(Point* color) {
   return new RainDrop(p, color, (rand() % 4) + 2);
 }
 
-void theMatrix() {
+void theMatrix(long maxTime) {
   Point color = Point(250, 50, 0);
   Point fadedColor = Point(color.x * 0.1, color.y * 0.1, color.z * 0.1);
 
@@ -674,7 +718,7 @@ void theMatrix() {
   RainDrop* d = randomTopDrop();
   drops.push_back(d);
   int colorI = 0;
-  while(true) {
+  while(millis() < maxTime) {
     int size = drops.size();
     for(int i = 0; i < size; i++) {
       RainDrop* cur = drops.front();
@@ -697,19 +741,57 @@ void theMatrix() {
     }
     cube.show();
     if (rand() % 4 > 1) {
-      int colorIrand = (colorI + rand() % 12) % 180;
+      int colorIrand = (colorI + rand() % 14) % 180;
       drops.push_back(randomTopDrop(new Point(rainbow[colorIrand])));
       if (rand() % 4 == 0) {
         colorI = (colorI + 1) % 180;
       }
     }
-    delay(35);
+    delay(32);
     cube.resetPixels();
+  }
+
+  
+  while (drops.size() > 0) {
+    RainDrop* cur = drops.front();
+    drops.pop_front();
+    delete cur;
   }
 }
 
+long loopMillis = 0;
+long animationMillis = 0;
+long animationDuration = 300000; // 5 minutes
+long extraRainbow = 60000;
+
+void rainbowFadeWrapper() {
+  animationMillis = millis();
+  long rainbowDur = animationDuration + extraRainbow;
+  while(millis() - animationMillis < rainbowDur) {
+    rainbowFade(colorI);
+    colorI = (colorI + 1) % 180;
+  }
+}
+
+void sphereWrapper() {
+  animationMillis = millis();
+  while(millis() - animationMillis < animationDuration) {
+    sphere();
+  }
+}
+
+void matrixWrapper() {
+  theMatrix(millis() + animationDuration);
+}
 
 void loop() {
+  rainbowFadeWrapper();
+  sphereWrapper();
+  matrixWrapper();
+
+
+  //sphere();
+
   //Serial.println("loop");
   //circle(2, 0.07);
   //rain2();
@@ -723,12 +805,12 @@ void loop() {
   //rainbowFade(colorI);
   //colorI = (colorI + 1) % 180;
   //manhattanSphere();
-  sphere();
+  //sphere();
   //splitter(Point(2, 0, 2));
   //rain();
   //dualSweep();
   //wave();
-  //theMatrix();
+  //theMatrix(millis() + 3000000);
 
 /*
   colorI += 1;
