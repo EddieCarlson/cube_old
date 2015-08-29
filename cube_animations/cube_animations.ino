@@ -1,9 +1,7 @@
 #include <OctoWS2811.h>
 
-#include <Color.h>
 #include <Cube.h>
 #include <Dumb.h>
-#include <MovingCube.h>
 #include <Point.h>
 
 
@@ -301,7 +299,7 @@ void manhattanSphere() {
       colorI = (colorI + 2) % 180;
       cube.resetPixels();
     }
-  //delay(1000);
+  delay(800);
 }
 
 void dimTest() {
@@ -596,7 +594,12 @@ RainDrop* randomTopDrop() {
   return new RainDrop(p, c, (rand() % 4) + 2);
 }
 
-void theMatrix() {
+RainDrop* randomTopDrop(Point* color) {
+  Point *p = randomTopPixel();
+  return new RainDrop(p, color, (rand() % 4) + 2);
+}
+
+void theMatrix(long maxTime) {
   Point color = Point(250, 50, 0);
   Point fadedColor = Point(color.x * 0.1, color.y * 0.1, color.z * 0.1);
 
@@ -604,11 +607,7 @@ void theMatrix() {
   RainDrop* d = randomTopDrop();
   drops.push_back(d);
   int colorI = 0;
-  while(true) {
-    colorI = (colorI + 2) % 180;
-    for(int i = 350; i < 400; i++) {
-      leds.setPixel(i, rainbow[colorI]);
-    }
+  while(millis() < maxTime) {
     int size = drops.size();
     for(int i = 0; i < size; i++) {
       RainDrop* cur = drops.front();
@@ -617,43 +616,65 @@ void theMatrix() {
       cube.setPixel(curPix, cur->color);
       Point* a = curPix->move(PZ);
       cube.setPixel(a, cur->fadedColor);
-      delete a;
+      a->move_in_place(PZ);
+      cube.setPixel(a, cur->moreFadedColor);
+      a->move_in_place(PZ);
+      cube.setPixel(a, cur->mostFadedColor);
       cur->move();
-      if (cube.inCube(cur->point)) {
+      if (cube.inCube(cur->point) || cube.inCube(a)) {
         drops.push_back(cur);
       } else {
         delete cur;
       }
+      delete a;
     }
     cube.show();
-    if (rand() % 4 != 0) {
-      drops.push_back(randomTopDrop());
+    if (rand() % 4 > 1) {
+      int colorIrand = (colorI + rand() % 14) % 180;
+      drops.push_back(randomTopDrop(new Point(rainbow[colorIrand])));
+      if (rand() % 4 == 0) {
+        colorI = (colorI + 1) % 180;
+      }
     }
-    delay(20);
+    delay(32);
     cube.resetPixels();
+  }
+
+  
+  while (drops.size() > 0) {
+    RainDrop* cur = drops.front();
+    drops.pop_front();
+    delete cur;
   }
 }
 
+long animationMillis = 0;
+long animationDuration = 180000; // 3 minutes
+
+void rainbowFadeWrapper() {
+  animationMillis = millis();
+  long rainbowDur = animationDuration;
+  while(millis() - animationMillis < rainbowDur) {
+    rainbowFade(colorI);
+    colorI = (colorI + 1) % 180;
+  }
+}
+
+void sphereWrapper() {
+  animationMillis = millis();
+  while(millis() - animationMillis < animationDuration) {
+    manhattanSphere();
+  }
+}
+
+void matrixWrapper() {
+  theMatrix(millis() + animationDuration);
+}
 
 void loop() {
-  //Serial.println("loop");
-  //circle(2, 0.07);
-  //rain2();
-  ///doubleStarburst();
-  //test();
-  //doubleSquare();
-  //dimTest();
-  //flyingSquare();
-  //farFadeTest(colorI);
-  //explodeCube();
-  //rainbowFade(colorI);
-  //colorI = (colorI + 1) % 180;
-  //manhattanSphere();
-  //splitter(Point(2, 0, 2));
-  //rain();
-  //dualSweep();
-  //wave();
-  theMatrix();
+  rainbowFadeWrapper();
+  sphereWrapper();
+  matrixWrapper();
 }
 
 
