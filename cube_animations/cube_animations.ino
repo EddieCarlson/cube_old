@@ -1,10 +1,10 @@
 #include <Cube.h>
 #include <Dumb.h>
 #include <Point.h>
-//#include <ColorWipe.h>
+#include <ColorWipe.h>
 
 #include <OctoWS2811.h>
-//#include <rainbow.h>
+#include <rainbow.h>
 
 #include <array>
 #include <math.h>
@@ -12,62 +12,6 @@
 #include <list>
 #include <vector>
 #include <deque>
-
-int rainbow[180];
-
-unsigned int h2rgb(unsigned int v1, unsigned int v2, unsigned int hue)
-{
-	if (hue < 60) return (v1 * 60 + (v2 - v1) * hue);
-	if (hue < 180) return (v2 * 60);
-	if (hue < 240) return (v1 * 60 + (v2 - v1) * (240 - hue));
-	return v1 * 60;
-}
-
-
-int makeColor(unsigned int hue, unsigned int saturation, unsigned int lightness)
-{
-	unsigned int red, green, blue;
-	unsigned int var1, var2;
-
-	if (hue > 359) hue = hue % 360;
-	if (saturation > 100) saturation = 100;
-	if (lightness > 100) lightness = 100;
-
-	// algorithm from: http://www.easyrgb.com/index.php?X=MATH&H=19#text19
-	if (saturation == 0) {
-		red = green = blue = lightness * 255 / 100;
-	} else {
-		if (lightness < 50) {
-			var2 = lightness * (100 + saturation);
-		} else {
-			var2 = ((lightness + saturation) * 100) - (saturation * lightness);
-		}
-		var1 = lightness * 200 - var2;
-		red = h2rgb(var1, var2, (hue < 240) ? hue + 120 : hue - 240) * 255 / 600000;
-		green = h2rgb(var1, var2, hue) * 255 / 600000;
-		blue = h2rgb(var1, var2, (hue >= 120) ? hue - 120 : hue + 240) * 255 / 600000;
-	}
-	return (red << 16) | (green << 8) | blue;
-}
-
-void setupRainbow() {
-  int saturation = 100;
-  int lightness = 50;
-  for (int i=0; i<180; i++) {
-    int hue = i * 2;
-    rainbow[i] = makeColor(hue, saturation, lightness);
-  }
-}
-
-int dimInt(int i, float f) {
-  int red = (i >> 16) & 0xFF;
-  int green = (i >> 8) & 0xFF;
-  int blue = i & 0xFF;
-  red *= f;
-  green *= f;
-  blue *= f;
-  return ((red << 16) & 0xFF0000) | ((green << 8) & 0x00FF00) | (blue & 0xFF);
-}
 
 int ledPin = 13;
 
@@ -106,7 +50,7 @@ const int zSize = 7;
 //int ***cube;
 Cube cube(leds, xSize, ySize, zSize);
 
-//ColorWipe colorWipe(&cube);
+ColorWipe colorWipe(&cube);
 
 void setup() {
   pinMode(ledPin, OUTPUT);
@@ -707,121 +651,9 @@ void matrixWrapper() {
   theMatrix(millis() + animationDuration);
 }
 
-void setYZPlane(int x, Point* color) {
-  for(int y = 0; y < ySize; y++) {
-    for(int z = 0; z < zSize; z++) {
-      cube.setPixel(x, y, z, color);
-    }
-  }
-  cube.show();
-}
-
-void setXYPlane(int z, Point* color) {
-  for(int y = 0; y < ySize; y++) {
-    for(int x = 0; x < xSize; x++) {
-      cube.setPixel(x, y, z, color);
-    }
-  }
-  cube.show();
-}
-
-void setXZPlane(int y, Point* color) {
-  for(int z = 0; z < zSize; z++) {
-    for(int x = 0; x < xSize; x++) {
-      cube.setPixel(x, y, z, color);
-    }
-  }
-  cube.show();
-}
-
-void xWipe(Point* color) {
-  for(int x = 0; x < xSize; x++) {
-    setYZPlane(x, color);
-    delay(100);
-  }
-}
-
-void negxWipe(Point* color) {
-  for(int x = xSize - 1; x >= 0; x--) {
-    setYZPlane(x, color);
-    delay(100);
-  }
-}
-
-void yWipe(Point* color) {
-  for(int y = 0; y < ySize; y++) {
-    setXZPlane(y, color);
-    delay(100);
-  }
-}
-
-void negyWipe(Point* color) {
-  for(int y = ySize - 1; y >= 0; y--) {
-    setXZPlane(y, color);
-    delay(100);
-  }
-}
-
-void zWipe(Point* color) {
-  for(int z = 0; z < zSize; z++) {
-    setXYPlane(z, color);
-    delay(100);
-  }
-}
-
-void negzWipe(Point* color) {
-  for(int z = zSize - 1; z >= 0; z--) {
-    setXYPlane(z, color);
-    delay(100);
-  }
-}
-
-int prevDir = 0;
-
-int newDir() {
-  int newDir = rand() % 6;
-  while(newDir == prevDir) {
-    newDir = rand() % 6;
-  }
-  prevDir = newDir;
-  return newDir;
-}
-
-int colorWipeIndex = rand() % 180;
-
-void colorWipe() {
-  colorWipeIndex = (colorWipeIndex + 60 + (rand() % 60)) % 180;
-  Point* p = new Point(dimInt(rainbow[colorWipeIndex], 0.4));
-  int nDir = newDir();
-  switch(nDir) {
-    case 0:
-      xWipe(p);
-      break;
-    case 1:
-      negxWipe(p);
-      break;
-    case 2:
-      yWipe(p);
-      break;
-    case 3:
-      negyWipe(p);
-      break;
-    case 4:
-      zWipe(p);
-      break;
-    case 5:
-      negzWipe(p);
-      break;
-    default:
-      break;
-  }
-
-  delete p;
-  delay(20);
-}
 
 void loop() {
-  colorWipe();
+  colorWipe.colorWipe();
   //colorWipe.colorWipe();
 //  rainbowFadeWrapper();
 //  sphereWrapper();
