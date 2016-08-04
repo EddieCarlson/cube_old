@@ -1,9 +1,10 @@
-#include <OctoWS2811.h>
-
 #include <Cube.h>
 #include <Dumb.h>
 #include <Point.h>
+//#include <ColorWipe.h>
 
+#include <OctoWS2811.h>
+//#include <rainbow.h>
 
 #include <array>
 #include <math.h>
@@ -12,54 +13,13 @@
 #include <vector>
 #include <deque>
 
-
-int ledPin = 13;
-
-const int ledsPerStrip = 350;
-const int numStrips = 2;
-
-DMAMEM int displayMemory[ledsPerStrip*6];
-int drawingMemory[ledsPerStrip*6];
-
-const int config = WS2811_GRB | WS2811_800kHz;
-
-OctoWS2811 leds(ledsPerStrip, displayMemory, drawingMemory, config);
-
-int top_burn = 0;
-int bottomBurn = 3;
-int startBurn = 2;
-int colsPerStrand = 6;
-int endBurn = 0;
-int strandsPerPanel = 1;
-
-const int xSize = 6;
-const int ySize = 7;
-const int zSize = 7;
-
-//int top_burn = 0;
-//int bottomBurn = 1;
-//int startBurn = 3;
-//int colsPerStrand = 6;
-//int endBurn = 2;
-//int strandsPerPanel = 1;
-//
-//const int xSize = 6;
-//const int ySize = 1;
-//const int zSize = 7;
-
-//int ***cube;
-Cube cube(leds, xSize, ySize, zSize);
-
-
 int rainbow[180];
-
-float colorFactor = 1.0;
 
 unsigned int h2rgb(unsigned int v1, unsigned int v2, unsigned int hue)
 {
-	if (hue < 60) return (v1 * 60 + (v2 - v1) * hue) * colorFactor;
-	if (hue < 180) return (v2 * 60) * colorFactor;
-	if (hue < 240) return (v1 * 60 + (v2 - v1) * (240 - hue)) * colorFactor;
+	if (hue < 60) return (v1 * 60 + (v2 - v1) * hue);
+	if (hue < 180) return (v2 * 60);
+	if (hue < 240) return (v1 * 60 + (v2 - v1) * (240 - hue));
 	return v1 * 60;
 }
 
@@ -99,6 +59,55 @@ void setupRainbow() {
   }
 }
 
+int dimInt(int i, float f) {
+  int red = (i >> 16) & 0xFF;
+  int green = (i >> 8) & 0xFF;
+  int blue = i & 0xFF;
+  red *= f;
+  green *= f;
+  blue *= f;
+  return ((red << 16) & 0xFF0000) | ((green << 8) & 0x00FF00) | (blue & 0xFF);
+}
+
+int ledPin = 13;
+
+const int ledsPerStrip = 350;
+const int numStrips = 2;
+
+DMAMEM int displayMemory[ledsPerStrip*6];
+int drawingMemory[ledsPerStrip*6];
+
+const int config = WS2811_GRB | WS2811_800kHz;
+
+OctoWS2811 leds(ledsPerStrip, displayMemory, drawingMemory, config);
+
+int top_burn = 0;
+int bottomBurn = 3;
+int startBurn = 2;
+int colsPerStrand = 6;
+int endBurn = 0;
+int strandsPerPanel = 1;
+
+const int xSize = 6;
+const int ySize = 7;
+const int zSize = 7;
+
+//int top_burn = 0;
+//int bottomBurn = 1;
+//int startBurn = 3;
+//int colsPerStrand = 6;
+//int endBurn = 2;
+//int strandsPerPanel = 1;
+//
+//const int xSize = 6;
+//const int ySize = 1;
+//const int zSize = 7;
+
+//int ***cube;
+Cube cube(leds, xSize, ySize, zSize);
+
+//ColorWipe colorWipe(&cube);
+
 void setup() {
   pinMode(ledPin, OUTPUT);
   Serial.begin(9600);
@@ -114,7 +123,7 @@ void solidCircle(Point *start, Point *color, float t) {
   float radius = sqrt(t);
   float near = std::min(2.0, radius / 1.5);
   float r2 = radius * radius;
-  
+
   for(int x = 0; x < xSize; x++) {
     for(int y = 0; y < ySize; y++) {
       for(int z = 0; z < zSize; z++) {
@@ -282,16 +291,6 @@ void test() {
   }
 }
 
-
-int dimInt(int i, float f) {
-  int red = (i >> 16) & 0xFF;
-  int green = (i >> 8) & 0xFF;
-  int blue = i & 0xFF;
-  red *= f;
-  green *= f;
-  blue *= f;
-  return ((red << 16) & 0xFF0000) | ((green << 8) & 0x00FF00) | (blue & 0xFF);
-}
 
 void manhattanSphereRad(Point *start, Point *color, float tt, int colorI) {
   
@@ -677,7 +676,7 @@ void theMatrix(long maxTime) {
     cube.resetPixels();
   }
 
-  
+
   while (drops.size() > 0) {
     RainDrop* cur = drops.front();
     drops.pop_front();
@@ -708,10 +707,125 @@ void matrixWrapper() {
   theMatrix(millis() + animationDuration);
 }
 
+void setYZPlane(int x, Point* color) {
+  for(int y = 0; y < ySize; y++) {
+    for(int z = 0; z < zSize; z++) {
+      cube.setPixel(x, y, z, color);
+    }
+  }
+  cube.show();
+}
+
+void setXYPlane(int z, Point* color) {
+  for(int y = 0; y < ySize; y++) {
+    for(int x = 0; x < xSize; x++) {
+      cube.setPixel(x, y, z, color);
+    }
+  }
+  cube.show();
+}
+
+void setXZPlane(int y, Point* color) {
+  for(int z = 0; z < zSize; z++) {
+    for(int x = 0; x < xSize; x++) {
+      cube.setPixel(x, y, z, color);
+    }
+  }
+  cube.show();
+}
+
+void xWipe(Point* color) {
+  for(int x = 0; x < xSize; x++) {
+    setYZPlane(x, color);
+    delay(100);
+  }
+}
+
+void negxWipe(Point* color) {
+  for(int x = xSize - 1; x >= 0; x--) {
+    setYZPlane(x, color);
+    delay(100);
+  }
+}
+
+void yWipe(Point* color) {
+  for(int y = 0; y < ySize; y++) {
+    setXZPlane(y, color);
+    delay(100);
+  }
+}
+
+void negyWipe(Point* color) {
+  for(int y = ySize - 1; y >= 0; y--) {
+    setXZPlane(y, color);
+    delay(100);
+  }
+}
+
+void zWipe(Point* color) {
+  for(int z = 0; z < zSize; z++) {
+    setXYPlane(z, color);
+    delay(100);
+  }
+}
+
+void negzWipe(Point* color) {
+  for(int z = zSize - 1; z >= 0; z--) {
+    setXYPlane(z, color);
+    delay(100);
+  }
+}
+
+int prevDir = 0;
+
+int newDir() {
+  int newDir = rand() % 6;
+  while(newDir == prevDir) {
+    newDir = rand() % 6;
+  }
+  prevDir = newDir;
+  return newDir;
+}
+
+int colorWipeIndex = rand() % 180;
+
+void colorWipe() {
+  colorWipeIndex = (colorWipeIndex + 60 + (rand() % 60)) % 180;
+  Point* p = new Point(dimInt(rainbow[colorWipeIndex], 0.4));
+  int nDir = newDir();
+  switch(nDir) {
+    case 0:
+      xWipe(p);
+      break;
+    case 1:
+      negxWipe(p);
+      break;
+    case 2:
+      yWipe(p);
+      break;
+    case 3:
+      negyWipe(p);
+      break;
+    case 4:
+      zWipe(p);
+      break;
+    case 5:
+      negzWipe(p);
+      break;
+    default:
+      break;
+  }
+
+  delete p;
+  delay(20);
+}
+
 void loop() {
-  rainbowFadeWrapper();
-  sphereWrapper();
-  matrixWrapper();
+  colorWipe();
+  //colorWipe.colorWipe();
+//  rainbowFadeWrapper();
+//  sphereWrapper();
+//  matrixWrapper();
 }
 
 
