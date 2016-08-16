@@ -651,9 +651,79 @@ void matrixWrapper() {
   theMatrix(millis() + animationDuration);
 }
 
+bool redSet[xSize][ySize][zSize];
+
+int sortIndexRed;
+int sortIndexGreen;
+
+void sortOne() {
+  int rz;
+  int ry;
+  int rx;
+  do {
+    rz = sortIndexRed % zSize;
+    ry = (sortIndexRed / zSize) % ySize;
+    rx = (sortIndexRed / (zSize * ySize)) % zSize;
+    sortIndexRed++;
+  } while(redSet[rx][ry][rz]);
+
+  int gz;
+  int gy;
+  int gx;
+  do {
+    gz = sortIndexGreen % zSize;
+    gy = (sortIndexGreen / zSize) % ySize;
+    gx = (sortIndexGreen / (zSize * ySize)) % xSize;
+    sortIndexGreen--;
+  } while(!redSet[gx][gy][gz]);
+
+  cube.setPixel(gx, gy, gz, 0, 255, 0);
+  cube.setPixel(rx, ry, rz, 255, 0, 0);
+  Serial.print("sortIndexRed: ");
+  Serial.println(sortIndexRed);
+  Serial.print("sortIndexGreen: ");
+  Serial.println(sortIndexGreen);
+  Serial.println();
+  cube.show();
+}
+
+void cubeSort() {
+  sortIndexRed = 0;
+  sortIndexGreen = xSize * ySize * zSize - 1;
+  for(int x = 0; x < xSize; x++) {
+    for(int y = 0; y < ySize; y++) {
+      for(int z = 0; z < zSize; z++) {
+        redSet[x][y][z] = rand() % 2 == 1;
+      }
+    }
+  }
+
+  for(int x = 0; x < xSize; x++) {
+    for(int y = 0; y < ySize; y++) {
+      for(int z = 0; z < zSize; z++) {
+        if(redSet[x][y][z]) {
+          cube.setPixel(x, y, z, 255, 0, 0);
+        } else {
+          cube.setPixel(x, y, z, 0, 255, 0);
+        }
+      }
+    }
+  }
+  cube.show();
+
+  while(sortIndexRed < sortIndexGreen) {
+    sortOne();
+    delay(25);
+  }
+  Serial.println("DONE!");
+  delay(1000);
+}
+
 
 void loop() {
-  colorWipe.colorWipe();
+  delay(50);
+  Serial.println("Hi");
+  cubeSort();
   //colorWipe.colorWipe();
 //  rainbowFadeWrapper();
 //  sphereWrapper();
