@@ -630,6 +630,7 @@ void theMatrix(long maxTime) {
 
 long animationMillis = 0;
 long animationDuration = 180000; // 3 minutes
+long twoMinutes = 120000; // 2 minutes
 
 void rainbowFadeWrapper() {
   animationMillis = millis();
@@ -649,6 +650,13 @@ void sphereWrapper() {
 
 void matrixWrapper() {
   theMatrix(millis() + animationDuration);
+}
+
+void colorWipeWrapper() {
+  animationMillis = millis();
+  while(millis() - animationMillis < twoMinutes) {
+    colorWipe.colorWipe();
+  }
 }
 
 bool redSet[xSize][ySize][zSize];
@@ -721,13 +729,10 @@ void cubeSort() {
 
 
 void loop() {
-  delay(50);
-  Serial.println("Hi");
-  cubeSort();
-  //colorWipe.colorWipe();
-//  rainbowFadeWrapper();
-//  sphereWrapper();
-//  matrixWrapper();
+  rainbowFadeWrapper();
+  sphereWrapper();
+  matrixWrapper();
+  colorWipeWrapper();
 }
 
 
