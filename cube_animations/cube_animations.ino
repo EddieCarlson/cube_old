@@ -27,6 +27,7 @@ OctoWS2811 leds(ledsPerStrip, displayMemory, drawingMemory, config);
 //const int xSize = 6;
 //const int ySize = 7;
 //const int zSize = 7;
+//sean was here
 
 int top_burn = 0;
 int bottomBurn = 1;
